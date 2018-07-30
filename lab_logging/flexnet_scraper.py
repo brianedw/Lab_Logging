@@ -74,7 +74,7 @@ def extractX(textBlock, module, readTime):
     search = opening + r'([\w\W]*?)' + closing
     searchRes = re.search(search, textBlock)
     if not searchRes:
-        print(readTime, module, "can't be found")
+        # print(readTime, module, "can't be found")
         return list()
     userBlock = searchRes.group(0)
     lines = userBlock.split('\n')

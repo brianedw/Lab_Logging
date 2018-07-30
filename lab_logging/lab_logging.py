@@ -4,6 +4,7 @@ import glob
 from flexnet_history import FlexNetHistory
 from comp_history import CompHistory
 import datetime
+import traceback
 
 dataDir = "C:\\lab_logging\\dump\\"
 outDir = "C:\\xampp\\htdocs\\plotly_depot"
@@ -13,38 +14,53 @@ def buildLUMChart():
     """
     Builds the Lumerical usage chart and places it in the designated directory.
     """
-    moduleList = [
-        'FDTD_Solutions_design', 'MODE_Solutions_design']
-    history = FlexNetHistory(dataDir, outDir, "LUM", moduleList)
-    history.buildAllHistory()
-    history.assignLicenseNumbers()
-    history.buildGannt()
+    try:
+        moduleList = [
+            'FDTD_Solutions_design', 'MODE_Solutions_design']
+        history = FlexNetHistory(dataDir, outDir, "LUM", moduleList)
+        history.buildAllHistory()
+        history.assignLicenseNumbers()
+        history.buildGannt()
+        print("LUM Chart Success")
+    except:
+        traceback.print_exc()
+        print("LUM Chart Failed")
 
 def buildCOMSOLChart():
     """
     Builds the COMSOL usage chart and places it in the designated directory.
     """
-    moduleList = [
-        'COMSOLGUI', 'WAVEOPTICS', 'RF', 'HEATTRANSFER', 'ACOUSTICS',
-        'LLMATLAB', 'CADIMPORT']
-    history = FlexNetHistory(dataDir, outDir, "COMSOL", moduleList)
-    history.buildAllHistory()
-    history.assignLicenseNumbers()
-    history.buildGannt()
+    try:
+        moduleList = [
+            'COMSOLGUI', 'WAVEOPTICS', 'RF', 'HEATTRANSFER', 'ACOUSTICS',
+            'LLMATLAB', 'CADIMPORT']
+        history = FlexNetHistory(dataDir, outDir, "COMSOL", moduleList)
+        history.buildAllHistory()
+        history.assignLicenseNumbers()
+        history.buildGannt()
+        print("COMSOL Chart Success")
+    except:
+        traceback.print_exc()
+        print("COMSOL Chart Failed")
 
 
 def buildCSTChart():
     """
     Builds the CST usage chart and places it in the designated directory.
     """
-    moduleList = [
+    try:
+        moduleList = [
         'frontend', 'Solver_TimeDomain', 'Solver_FrequencyDomain',
-        'Solver_Eigenmode', 'Solver_IntegralEquation',
-        'Solver_PrintedCircuitBoard']
-    history = FlexNetHistory(dataDir, outDir, "CST", moduleList)
-    history.buildAllHistory()
-    history.assignLicenseNumbers()
-    history.buildGannt()
+            'Solver_Eigenmode', 'Solver_IntegralEquation',
+            'Solver_PrintedCircuitBoard']
+        history = FlexNetHistory(dataDir, outDir, "CST", moduleList)
+        history.buildAllHistory()
+        history.assignLicenseNumbers()
+        history.buildGannt()
+        print("CST Chart Success")
+    except:
+        traceback.print_exc()
+        print("CST Chart Failed")
 
 
 def buildCompChart(compName):
@@ -54,9 +70,14 @@ def buildCompChart(compName):
     Arguments: compName {str} -- The computer name as it would appear in the
     log files.
     """
-    cHist = CompHistory(dataDir, outDir, compName)
-    cHist.buildAllHistory()
-    cHist.buildScatterPlot()
+    try:
+        cHist = CompHistory(dataDir, outDir, compName)
+        cHist.buildAllHistory()
+        cHist.buildScatterPlot()
+        print("Comp Chart Success: "+compName)
+    except:
+        traceback.print_exc()
+        print("Comp Chart Failed: "+compName)
 
 
 def main():
