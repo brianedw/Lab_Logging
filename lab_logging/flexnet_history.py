@@ -140,9 +140,16 @@ class FlexNetHistory:
                 Name=r.user + '(' + r.server + ')'
             )
             ganntList.append(newBar)
+        colors = dict()
+        for bar in ganntList:
+            user = bar['Resource']
+            red = (hash(user + 'r') % 256) / 256.
+            grn = (hash(user + 'g') % 256) / 256.
+            blu = (hash(user + 'b') % 256) / 256.
+            colors[user] = (red, grn, blu)
         fig = ff.create_gantt(
             ganntList, index_col='Resource', show_colorbar=True,
-            group_tasks=True)
+            group_tasks=True, colors=colors)
         for i in range(len(ganntList)):
             fig['data'][i].update(hoverinfo="text", text=ganntList[i]['Name'])
         buttons = list([

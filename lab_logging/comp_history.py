@@ -29,7 +29,7 @@ class CompHistory:
 
     def __init__(self, dataDirectory, outDirectory, compName):
         """
-        CompHistory plots computer usage by processing 
+        CompHistory plots computer usage by processing
 
         Args:
             dataDirectory: The directory where the data files live.  (ie '.\\dump\\'.)
@@ -97,22 +97,32 @@ class CompHistory:
         plotDataCPU = []
         plotDataMem = []
         for trace in cpuTraces:
-            hueAsString = str(hash(trace.name) % 256)
+            user = trace.name
+            red = str(hash(user + 'r') % 256)
+            grn = str(hash(user + 'g') % 256)
+            blu = str(hash(user + 'b') % 256)
+            color = "rgb(" + red + ", " + grn + ", " + blu + ")"
             scat = go.Scatter(
                 x=trace.x,
                 y=trace.y,
-                name=trace.name,
-                marker=dict(color="hsl(" + hueAsString + ", 100%, 50%)"),
+                name=user,
+                mode='lines',
+                line=dict(color=color, width=1),
                 yaxis='y',
                 showlegend=False)
             plotDataCPU.append(scat)
         for trace in memTraces:
-            hueAsString = str(hash(trace.name) % 256)
+            user = trace.name
+            red = str(hash(user + 'r') % 256)
+            grn = str(hash(user + 'g') % 256)
+            blu = str(hash(user + 'b') % 256)
+            color = "rgb(" + red + ", " + grn + ", " + blu + ")"
             scat = go.Scatter(
                 x=trace.x,
                 y=trace.y,
-                name=trace.name,
-                marker=dict(color="hsl(" + hueAsString + ", 50%, 50%)"),
+                name=user,
+                mode='lines',
+                line=dict(color=color, width=1),
                 yaxis='y2',
                 showlegend=False)
             plotDataMem.append(scat)
