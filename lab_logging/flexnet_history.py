@@ -89,8 +89,11 @@ class FlexNetHistory:
         and therefore, the canonical order will be equal to the chronological
         one.
         """
-        fileList = glob.glob(self.dataDirectory +
-                             self.targetProgram + "*.txt")
+        targetPath = os.path.join(
+            self.dataDirectory, self.targetProgram + "*.txt")
+        fileList = glob.glob(targetPath)
+        if len(fileList) == 0:
+            print("Warning:", targetPath, "does not match any files.")
         fileList.sort
         return fileList
 
