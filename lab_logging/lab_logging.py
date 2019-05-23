@@ -8,6 +8,7 @@ import traceback
 
 dataDir = "C:\\lab_logging\\dump\\"
 outDir = "C:\\xampp\\htdocs\\plotly_depot"
+outDir = "C:\\Bitnami\\dokuwiki-20180422b-3\\apache2\\htdocs\\plotly_depot"
 
 
 def buildLUMChart():
@@ -33,11 +34,13 @@ def buildCOMSOLChart():
     try:
         moduleList = [
             'COMSOLGUI', 'WAVEOPTICS', 'RF', 'HEATTRANSFER', 'ACOUSTICS',
-            'LLMATLAB', 'CADIMPORT']
+            'LLMATLAB', 'CADIMPORT', 'OPTIMIZATION']
         history = FlexNetHistory(dataDir, outDir, "COMSOL", moduleList)
         history.buildAllHistory()
         history.assignLicenseNumbers()
         history.buildGannt()
+        history.sortLicsByModule()
+        history.buildVBarGraphs()
         print("COMSOL Chart Success")
     except:
         traceback.print_exc()

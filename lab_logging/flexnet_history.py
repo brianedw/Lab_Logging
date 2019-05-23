@@ -3,11 +3,15 @@ import sys
 import glob
 from flexnet_scraper import readFlexNetFile
 from sorter_allocator import SorterAllocator
+import datetime
+from math import floor, ceil
 
 import plotly
 plotly.__version__
 from plotly.offline import download_plotlyjs, init_notebook_mode, plot, iplot
+import plotly.graph_objs as go
 import plotly.figure_factory as ff
+
 
 
 class FlexNetHistory:
@@ -42,8 +46,9 @@ class FlexNetHistory:
         self.outDirectory = outDirectory
         self.targetProgram = targetProgram  # 'COMSOL'
         self.modules = modules
-        self.openLicenses = set()
-        self.closedLicenses = set()
+        self.openLicenses = list()
+        self.closedLicenses = list()
+        self.licByModule = dict()
 
     def buildAllHistory(self):
         """ Obtains an ordered list of all of the filenames and uses them to
@@ -65,19 +70,29 @@ class FlexNetHistory:
         Record objects at some point in the near future from those in both the
         'openRecords' and 'closedRecords' attributes.
         """
-        # the recently closed records are those that were previously open, but
-        # no longer are.  Of course, we can checkIn these licenses.
-        openNow = set(recordList)
-        oldOpened = self.openLicenses
-        newlyClosed = oldOpened.copy()
-        for record in openNow:
-            newlyClosed.discard(record)
-        for record in newlyClosed:
-            record.checkedOut = False
-            self.closedLicenses.add(record)
-        # the only open records are those that are in the latest file.  These
-        # contain the most up to date 'lastSeen' information.
-        self.openLicenses = openNow
+        currentLics = recordList.copy()
+        openLics = self.openLicenses
+        recentlyClosed = listDifference(openLics, currentLics)
+        self.closedLicenses.extend(recentlyClosed)
+        recentlyOpened = listDifference(currentLics, openLics)
+        newOpenLics = listDifference(openLics, recentlyClosed)
+        newOpenLics = listDifference(newOpenLics, recentlyOpened)
+        listUpdate(newOpenLics, currentLics, {'lastSeen'})
+        newOpenLics.extend(recentlyOpened)
+        self.openLicenses = newOpenLics
+
+    def sortLicsByModule(self):
+        self.licByModule = dict()
+        for lic in self.closedLicenses:
+            module = lic.module
+            if module not in self.licByModule:
+                self.licByModule[module] = []
+            self.licByModule[module].append(lic)
+        for lic in self.openLicenses:
+            module = lic.module
+            if module not in self.licByModule:
+                self.licByModule[module] = []
+            self.licByModule[module].append(lic)
 
     def gatherFileNames(self):
         """
@@ -109,7 +124,8 @@ class FlexNetHistory:
         implement a Gannt chart.
         """
 
-        records = list(self.openLicenses.union(self.closedLicenses))
+        records = self.closedLicenses.copy()
+        records.extend(self.openLicenses)
         fModule = lambda record: record.module
         fStart = lambda record: record.start
         fEnd = lambda record: record.lastSeen
@@ -124,6 +140,13 @@ class FlexNetHistory:
                     for record in slot:
                         record.licNumber = slotIndex
 
+    def makeLicString(self, record):
+        r = record
+        nSpaces = len(self.modules) - self.modules.index(r.module)
+        orderingString = ' ' * nSpaces
+        licNumString = '(' + '{0:2d}'.format(r.licNumber) + ')'
+        return orderingString + r.module + licNumString
+
     def buildGannt(self):
         """ Iterates through all of the open and closed records and builds the
         Gannt figure.
@@ -131,12 +154,15 @@ class FlexNetHistory:
 
         # dict(Task="Job-1", Start='2017-01-01', Finish='2017-02-02',
         # Resource='Abe', Name='Abe(FW1)')
-        allRecords = list(self.closedLicenses.union(self.openLicenses))
-        allRecords.sort(key=lambda r: r.module + str(r.licNumber))
+        allRecords = self.closedLicenses.copy()
+        allRecords.extend(self.openLicenses)
+        allRecords.sort(key=self.makeLicString)
         ganntList = list()
+
         for r in allRecords:
+
             newBar = dict(
-                Task=r.module + "(" + str(r.licNumber) + ")",
+                Task=self.makeLicString(r),
                 Start=r.start,
                 Finish=r.lastSeen,
                 Resource=r.user,
@@ -194,6 +220,38 @@ class FlexNetHistory:
              include_plotlyjs=False)
         addPlotlyScriptCall(outPath)
 
+    def buildVBarGraphs(self):
+        for module in self.modules:
+            now = datetime.datetime.today()
+            moduleDict = dict() # {-16: {'Nasim': 0.22, 'yasaman': 0.45}, -15: {'Nasim': 0.8, ...}}
+            for lic in self.licByModule[module]:
+                user = lic.user.lower()
+                # print(lic)
+                if user not in moduleDict:
+                    moduleDict[user] = dict() #{week: value, week: value}
+                licAllocDict = weekAllocDict(lic.start, lic.lastSeen, now)
+                userModuleDict = moduleDict[user]
+                for week, value in licAllocDict.items():
+                    if week not in userModuleDict:
+                        userModuleDict[week] = 0.
+                    userModuleDict[week] += value
+            data = []
+            for user, usage in moduleDict.items():
+                bar = go.Bar(
+                    name=user,
+                    x=list(usage.keys()),
+                    y=list(usage.values())
+                )
+                data.append(bar)
+            layout = go.Layout(barmode='stack', title=module)
+            fig = go.Figure(data=data, layout=layout)
+            outPath = os.path.join(self.outDirectory, self.targetProgram +
+                                    '_' + module + '.html')
+            # The 'plot' command generates a file at 'outPath'
+            plot(fig, filename=outPath, auto_open=False,
+                include_plotlyjs=False)
+            addPlotlyScriptCall(outPath)
+
 def addPlotlyScriptCall(fName):
     str1 = open(fName, mode='r')
     text = str1.read()
@@ -205,3 +263,44 @@ def addPlotlyScriptCall(fName):
     str2 = open(fName,mode='w')
     str2.write(newHTML)
     str2.close()
+
+def listDifference(aList, bList):
+    """
+    Returns the set difference between aList and bList
+
+    Creates a copy of aList.  Looks for each element of bList in aList and removes it from aList. 
+    """
+    aCopy = aList.copy()
+    for bElem in bList:
+        if bElem in aCopy:
+            aCopy.remove(bElem)
+    return aCopy
+
+
+def listUpdate(aList, bList, attributes):
+    virginIndices = set(range(len(aList)))
+    for bElem in bList:
+        for i in virginIndices:
+            aElem = aList[i]
+            if aElem == bElem:
+                for att in attributes:
+                    aElem.__setattr__(att, bElem.__getattribute__(att))
+                virginIndices.remove(i)
+                break
+
+def weeksPast(then, now):
+    delta = (now - then)
+    weeks = delta.total_seconds()/(60*60*24*7)
+    return weeks
+
+def weekAllocDict(startDate, endDate, now):
+    weeksStart = -weeksPast(startDate, now)
+    weeksEnd = -weeksPast(endDate, now)
+    allocDict = dict()
+    for i in range(floor(weeksStart), floor(weeksEnd)+1):
+        bucket = i
+        allocDict[bucket] = 1
+    # print(allocDict)
+    allocDict[floor(weeksStart)] -= weeksStart - floor(weeksStart)
+    allocDict[floor(weeksEnd)] -= ceil(weeksEnd) - weeksEnd
+    return allocDict

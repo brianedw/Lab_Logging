@@ -50,8 +50,9 @@ class LeaseRecord:
 
         # signature intentionally ignores 'lastSeen' and 'checkedOut' as these
         # are considered mutable.
-        return (self.user, self.module, self.server, self.terminal,
-                self.version, self.licServer, self.start)
+        # return (self.user, self.module, self.server, self.terminal,
+        #         self.version, self.licServer, self.start)
+        return (self.user, self.module, self.server, self.checkedOut)
 
     def equiv(self, other):
         '''
