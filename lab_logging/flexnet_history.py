@@ -190,4 +190,18 @@ class FlexNetHistory:
         fig['layout'].update(margin=dict(l=200))
         outPath = os.path.join(self.outDirectory, self.targetProgram + '.html')
         # The 'plot' command generates a file at 'outPath'
-        plot(fig, filename=outPath, auto_open=False)
+        plot(fig, filename=outPath, auto_open=False,
+             include_plotlyjs=False)
+        addPlotlyScriptCall(outPath)
+
+def addPlotlyScriptCall(fName):
+    str1 = open(fName, mode='r')
+    text = str1.read()
+    str1.close()
+    pHeadEnd = text.find("</head>") + 7
+    scriptCall = '<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>'
+    textSequence = (text[0:pHeadEnd], scriptCall, text[pHeadEnd:])
+    newHTML = "".join(textSequence)
+    str2 = open(fName,mode='w')
+    str2.write(newHTML)
+    str2.close()

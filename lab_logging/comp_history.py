@@ -80,7 +80,8 @@ class CompHistory:
         layout = self.buildPlotlyLayout(maxes)
         fig = dict(data=data, layout=layout)
         outPath = os.path.join(self.outDirectory, self.compName + '.html')
-        plot(fig, filename=outPath, auto_open=False)
+        plot(fig, filename=outPath, auto_open=False, include_plotlyjs=False)
+        addPlotlyScriptCall(outPath)
 
     def buildPlotlyData(self):
         """
@@ -277,3 +278,15 @@ class TraceBank:
         allTraces = self.closedTraces.copy()
         allTraces.extend(self.openTraces.values())
         return allTraces
+
+def addPlotlyScriptCall(fName):
+    str1 = open(fName, mode='r')
+    text = str1.read()
+    str1.close()
+    pHeadEnd = text.find("</head>") + 7
+    scriptCall = '<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>'
+    textSequence = (text[0:pHeadEnd], scriptCall, text[pHeadEnd:])
+    newHTML = "".join(textSequence)
+    str2 = open(fName,mode='w')
+    str2.write(newHTML)
+    str2.close()
